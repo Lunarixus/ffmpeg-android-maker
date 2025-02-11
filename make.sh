@@ -19,7 +19,7 @@ FAM_ARGS+="-gnutls "
 FAM_ARGS+="-zlib "
 
 #*lib renames main() to ffmpeg() in both ffmpeg and ffprobe
-case type in
+case $1 in
   static)
     FAM_ARGS+="--enable-static "
     ;;
