@@ -27,6 +27,9 @@ RUN apt-get --allow-releaseinfo-change update && apt-get install -y --no-install
   pkg-config \
   make \
   git \
+  autoconf \
+  libtool \
+  automake \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

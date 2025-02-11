@@ -11,8 +11,10 @@ API_LEVEL=21
 SOURCE_TYPE=TAR
 SOURCE_VALUE=7.1
 EXTERNAL_LIBRARIES=()
-FFMPEG_GPL_ENABLED=false
-FFMPEG_NONFREE_ENABLED=false
+GPL_ENABLED=false
+NONFREE_ENABLED=false
+STATIC=false
+LIBRARY=false
 
 # All FREE libraries that are supported
 SUPPORTED_LIBRARIES_FREE=(
@@ -20,26 +22,23 @@ SUPPORTED_LIBRARIES_FREE=(
   "libdav1d"
   "libmp3lame"
   "libopus"
-  "libvorbis"
   "libtwolame"
   "libspeex"
   "libvpx"
   "libwebp"
   "libfreetype"
   "libfribidi"
+  "mbedtls"
   "libbluray"
   "libxml2"
-  "gnutls"
-  "zlib"
-)
-
-# All GPL libraries that are supported
-SUPPORTED_LIBRARIES_GPL=(
-  "openssl"
 )
 
 # All NONFREE libraries that are supported
 SUPPORTED_LIBRARIES_NONFREE=(
+)
+
+# All GPL libraries that are supported
+SUPPORTED_LIBRARIES_GPL=(
   "libx264"
   "libx265"
 )
@@ -85,6 +84,18 @@ for argument in "$@"; do
     SOURCE_TYPE=TAR
     SOURCE_VALUE="${argument#*=}"
     ;;
+  # Enables static build
+  --static | -static | --enable-static | --disable-shared)
+    STATIC=true
+    ;;
+  # Disables static build
+  --shared | -shared | --enable-shared | --disable-static)
+    STATIC=false
+    ;;
+  # Renames main() to ffmpeg()
+  --library | -library | --enable-library)
+    LIBRARY=true
+    ;;
   # Arguments below enable certain external libraries to build into FFmpeg
   --enable-libaom | -aom)
     EXTERNAL_LIBRARIES+=("libaom")
@@ -98,14 +109,8 @@ for argument in "$@"; do
   --enable-libopus | -opus)
     EXTERNAL_LIBRARIES+=("libopus")
     ;;
-  --enable-libvorbis | -vorbis)
-    EXTERNAL_LIBRARIES+=("libvorbis")
-    ;;
   --enable-libwebp | -webp)
     EXTERNAL_LIBRARIES+=("libwebp")
-    ;;
-  --enable-libwavpack | -wavpack)
-    EXTERNAL_LIBRARIES+=("libwavpack")
     ;;
   --enable-libtwolame | -twolame)
     EXTERNAL_LIBRARIES+=("libtwolame")
@@ -124,24 +129,14 @@ for argument in "$@"; do
     ;;
   --enable-libx264 | -x264)
     EXTERNAL_LIBRARIES+=("libx264")
-    FFMPEG_NONFREE_ENABLED=true
+    GPL_ENABLED=true
     ;;
   --enable-libx265 | -x265)
     EXTERNAL_LIBRARIES+=("libx265")
-    FFMPEG_NONFREE_ENABLED=true
+    GPL_ENABLED=true
     ;;
   --enable-mbedtls | -mbedtls)
     EXTERNAL_LIBRARIES+=("mbedtls")
-    ;;
-  --enable-openssl | -openssl)
-    EXTERNAL_LIBRARIES+=("openssl")
-    FFMPEG_GPL_ENABLED=true
-    ;;
-  --enable-gnutls | -gnutls)
-    EXTERNAL_LIBRARIES+=("gnutls")
-    ;;
-  --enable-zlib | -zlib)
-    EXTERNAL_LIBRARIES+=("zlib")
     ;;
   --enable-libbluray | -bluray)
     EXTERNAL_LIBRARIES+=("libbluray")
@@ -154,10 +149,11 @@ for argument in "$@"; do
     ;;
   --enable-all-nonfree | -all-nonfree)
     EXTERNAL_LIBRARIES+=" ${SUPPORTED_LIBRARIES_NONFREE[@]}"
+    NONFREE_ENABLED=true
     ;;
   --enable-all-gpl | -all-gpl)
     EXTERNAL_LIBRARIES+=" ${SUPPORTED_LIBRARIES_GPL[@]}"
-    FFMPEG_GPL_ENABLED=true
+    GPL_ENABLED=true
     ;;
   *)
     echo "Unknown argument $argument"
@@ -186,3 +182,8 @@ export FFMPEG_EXTERNAL_LIBRARIES=${EXTERNAL_LIBRARIES[@]}
 # Desired Android API level to use during compilation
 # Will be replaced with 21 for 64bit ABIs if the value is less than 21
 export DESIRED_ANDROID_API_LEVEL=${API_LEVEL}
+
+export FFMPEG_GPL_ENABLED=$GPL_ENABLED
+export FFMPEG_NONFREE_ENABLED=$NONFREE_ENABLED
+export FFMPEG_STATIC=$STATIC
+export FFMPEG_LIBRARY=$LIBRARY
