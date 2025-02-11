@@ -1,0 +1,50 @@
+name: Build and Push Artifacts
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        abi: ["armeabi-v7a", "arm64-v8a", "x86", "x86_64"]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup the environment
+        run: |
+          sudo apt update
+          sudo apt install meson nasm ninja-build
+
+      - name: Build the artifacts
+        run: |
+          export ANDROID_SDK_HOME=$ANDROID_HOME
+          export ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME
+          ./ffmpeg-android-maker.sh -all-free -all-gpl -android=24 -abis=${{ matrix.abi }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-${{ matrix.abi }}
+          path: output/${{ matrix.abi }}/*  # Adjust this path based on actual artifact location
+
+  push:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Upload to Remote Destination
+        env:
+          UPLOAD_DESTINATION: "your-destination-url"
+        run: |
+          echo "Uploading artifacts..."
+          # Example: Upload to GitHub Releases
+          gh release upload v1.0.0 artifacts/* --clobber
