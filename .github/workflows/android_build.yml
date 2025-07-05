@@ -63,6 +63,10 @@ jobs:
           FAM_ARGS+="-zlib "
           FAM_ARGS+="--enable-static " # For the static build
 
+          # Add linker flags to create a fully static binary, including system libraries.
+          # This removes dependencies on .so files like libc.so, libm.so, etc.
+          FAM_ARGS+="--extra-ldflags=-static "
+
           # Run the container.
           # We mount the current directory into the container, so the build output
           # will be available in the workflow's workspace.
