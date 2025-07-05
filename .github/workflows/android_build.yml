@@ -1,0 +1,84 @@
+# .github/workflows/build-ffmpeg-android.yml
+
+name: Build Static FFmpeg for Android
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    steps:
+      # --- 1. Set up the environment ---
+
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Set up JDK 17, which is a common requirement for modern Android development
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Set up the Android SDK and NDK. This action will automatically set the
+      # ANDROID_HOME and ANDROID_NDK_HOME environment variables.
+      - name: Setup Android SDK and NDK
+        uses: android-actions/setup-android@v3
+
+      # --- 2. Build FFmpeg ---
+
+      # Build the Docker image using the Dockerfile in your repository
+      - name: Build Docker image
+        run: docker build -t "joshuadoes/ffmpeg-android-maker:Dockerfile" .
+
+      # Run the build script inside the Docker container
+      - name: Build static FFmpeg
+        run: |
+          # Define the build arguments for ffmpeg-android-maker
+          # This is the same set of arguments from your script, plus --enable-static
+          FAM_ARGS="--android-api-level=31 "
+          FAM_ARGS+="-aom "
+          FAM_ARGS+="-dav1d "
+          FAM_ARGS+="-mp3lame "
+          FAM_ARGS+="-opus "
+          FAM_ARGS+="-webp "
+          FAM_ARGS+="-twolame "
+          FAM_ARGS+="-speex "
+          FAM_ARGS+="-vpx "
+          FAM_ARGS+="-freetype "
+          FAM_ARGS+="-fribidi "
+          FAM_ARGS+="-x264 "
+          FAM_ARGS+="-x265 "
+          FAM_ARGS+="-xml2 "
+          FAM_ARGS+="-gnutls "
+          FAM_ARGS+="-zlib "
+          FAM_ARGS+="--enable-static " # For the static build
+
+          # Run the container.
+          # We mount the current directory into the container, so the build output
+          # will be available in the workflow's workspace.
+          # `sudo` is not required for Docker on GitHub-hosted runners.
+          docker run --rm -v "$(pwd)":/mnt/ffmpeg-android-maker -e FAM_ARGS="${FAM_ARGS}" joshuadoes/ffmpeg-android-maker:Dockerfile
+
+      # --- 3. Package the results ---
+
+      # Upload the compiled binaries as a workflow artifact
+      - name: Upload FFmpeg binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-static-android-binaries
+          # IMPORTANT: You may need to adjust this path.
+          # Check where your build script places the final files.
+          # Common locations are 'build/', 'output/', 'bin/', or the root directory.
+          path: |
+            ./build/ffmpeg
+            ./build/ffprobe
